@@ -19,8 +19,8 @@ func NewLogger() {
 
 	logStore.SetFormatter(&logrus.JSONFormatter{})
 	Logger = logStore.WithFields(logrus.Fields{
-		"name": "香香编程喵喵喵", //在我们自己的服务里 看着很多余
-		"app":  "voteV2",
+		"name": "ydsy", //在我们自己的服务里 看着很多余
+		"app":  "voteV1",
 	})
 
 	//logStore.AddHook() //出现非常严重问题，直接邮箱或者微信报警，日志分割，塞入一些自定义的字段

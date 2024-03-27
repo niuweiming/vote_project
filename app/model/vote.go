@@ -3,9 +3,11 @@ package model
 import (
 	"fmt"
 	"gorm.io/gorm"
+	"sync"
 	"time"
 )
 
+// GetVotes 从数据库中检索所有投票。
 func GetVotes() []Vote {
 	ret := make([]Vote, 0)
 	if err := Conn.Table("vote").Find(&ret).Error; err != nil {
@@ -14,6 +16,7 @@ func GetVotes() []Vote {
 	return ret
 }
 
+// GetVote 根据ID检索单个投票以及其选项。
 func GetVote(id int64) VoteWithOpt {
 	var ret Vote
 	if err := Conn.Table("vote").Where("id=?", id).First(&ret).Error; err != nil {
@@ -30,7 +33,46 @@ func GetVote(id int64) VoteWithOpt {
 	}
 }
 
-// DoVote GORM 最常用的事务方法
+func GetVoteV2(id int64) (*VoteWithOptV1, error) {
+	var ret VoteWithOptV1
+	err := Conn.Preload("vote_opt", "vote_id = ?", id).Raw("select * from vote where id = ? ", id).Scan(&ret).Error
+	if err != nil {
+		fmt.Printf("err:%s", err.Error())
+		return &ret, err
+	}
+	return &ret, nil
+}
+
+func GetVoteV5(id int64) (*VoteWithOpt, error) {
+	var ret Vote
+
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		err := Conn.Raw("select * from vote where id = ?", id).Scan(&ret).Error
+		if err != nil {
+			fmt.Printf("err:%s", err.Error())
+		}
+	}()
+	wg.Add(1)
+	opt := make([]VoteOpt, 0)
+	go func() {
+		defer wg.Done()
+		err1 := Conn.Raw("select * from vote_opt where vote_id = ?", id).Scan(&opt).Error
+		if err1 != nil {
+			fmt.Printf("err:%s", err1.Error())
+		}
+	}()
+	wg.Wait()
+
+	return &VoteWithOpt{
+		Vote: ret,
+		Opt:  opt,
+	}, nil
+}
+
+// DoVote 使用GORM执行事务性投票操作。
 func DoVote(userId, voteId int64, optIDs []int64) bool {
 	tx := Conn.Begin()
 	var ret Vote
@@ -71,12 +113,12 @@ func DoVote(userId, voteId int64, optIDs []int64) bool {
 }
 
 // DoVoteV1 原生SQL
-//func DoVoteV1(userId, voteId int64, optIDs []int64) bool {
-//	Conn.Exec("begin").
-//		Exec("select * from vote where id = ?", voteId).
-//		Exec("commit")
-//	return false
-//}
+func DoVoteV1(userId, voteId int64, optIDs []int64) bool {
+	Conn.Exec("begin").
+		Exec("select * from vote where id = ?", voteId).
+		Exec("commit")
+	return false
+}
 
 // DoVoteV2 匿名函数最常用的写法 利用了匿名函数实现事务
 func DoVoteV2(userId, voteId int64, optIDs []int64) bool {
@@ -152,6 +194,7 @@ func DoVoteV3(userId, voteId int64, optIDs []int64) bool {
 	return true
 }
 
+// AddVote 在事务内向数据库添加新的投票及其选项。
 func Addvote(vote Vote, opt []VoteOpt) error {
 	//事务
 	err := Conn.Transaction(func(tx *gorm.DB) error {
@@ -170,6 +213,7 @@ func Addvote(vote Vote, opt []VoteOpt) error {
 	return err
 }
 
+// UpdateVote 在事务内更新数据库中现有投票及其选项。
 func Updatevote(vote Vote, opt []VoteOpt) error {
 	//事务
 	err := Conn.Transaction(func(tx *gorm.DB) error {
@@ -186,6 +230,7 @@ func Updatevote(vote Vote, opt []VoteOpt) error {
 	return err
 }
 
+// DelVote 在事务内从数据库中删除一个投票及其相关数据。
 func DelVote(id int64) bool {
 	if err := Conn.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Delete(&Vote{}, id).Error; err != nil {
@@ -211,17 +256,16 @@ func DelVote(id int64) bool {
 // 删除版本V1原生sql
 func DelVoteV1(id int64) bool {
 	if err := Conn.Transaction(func(tx *gorm.DB) error {
-
-		if err := tx.Exec("delete form vote where id = ? limit 1", id).Error; err != nil {
+		if err := tx.Exec("delete from vote where id = ? limit 1", id).Error; err != nil {
 			fmt.Printf("err:%s", err.Error())
 			return err
 		}
-		if err := tx.Exec("delete form vote_opt where vote_id = ?", id).Delete(&VoteOpt{}).Error; err != nil {
+		if err := tx.Exec("delete from vote_opt where vote_id = ?", id).Delete(&VoteOpt{}).Error; err != nil {
 			fmt.Printf("err:%s", err.Error())
 			return err
 		}
 
-		if err := tx.Exec("delete form vote_opt_user where vote_id = ?", id).Delete(&VoteOptUser{}).Error; err != nil {
+		if err := tx.Exec("delete from vote_opt_user where vote_id = ?", id).Delete(&VoteOptUser{}).Error; err != nil {
 			fmt.Printf("err:%s", err.Error())
 			return err
 		}
@@ -233,6 +277,7 @@ func DelVoteV1(id int64) bool {
 	return true
 }
 
+// GetVoteHistory 检索用户对特定投票的投票历史。
 func GetVoteHistory(userId, voteId int64) []VoteOptUser {
 	ret := make([]VoteOptUser, 0)
 	if err := Conn.Table("vote_opt_user").Where("vote_id = ? and user_id = ?", voteId, userId).First(&ret).Error; err != nil {
@@ -241,6 +286,7 @@ func GetVoteHistory(userId, voteId int64) []VoteOptUser {
 	return ret
 }
 
+// EndVote 根据过期时间将已过期的投票的状态更新为0。
 func EndVote() {
 	votes := make([]Vote, 0)
 	if err := Conn.Table("vote").Where("status = ?", 1).Find(&votes).Error; err != nil {
@@ -275,4 +321,11 @@ func EndVoteV1() {
 	return
 }
 
-//为啥用原生sql，出现慢查询可以进行排查
+// GetVoteByName 根据名称检索投票。
+func GetVoteByName(name string) *Vote {
+	var ret Vote
+	if err := Conn.Table("vote").Where("title = ?", name).First(&ret).Error; err != nil {
+		fmt.Printf("")
+	}
+	return &ret
+}

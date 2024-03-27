@@ -20,7 +20,7 @@ func EndVote() {
 		select {
 		case <-t.C:
 			fmt.Println("EndVote启动")
-			model.EndVote()
+			model.EndVoteV1()
 			fmt.Println("EndVote运行完毕")
 		}
 

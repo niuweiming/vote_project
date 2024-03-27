@@ -3,40 +3,57 @@ package router
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	"net/http"
 	"vote/app/logic"
 	"vote/app/model"
 	"vote/app/tools"
+	_ "vote/docs"
 )
 
 func New() {
 	r := gin.Default()
 	r.LoadHTMLGlob("app/view/*")
 	//相关的路径，放在这里
+	r.Use(tools.Cors())
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	index := r.Group("")
+	index.Use(checkUser)
+	//{
+	//	//vote相关
+	//	index.GET("/index", logic.Index)
+	//
+	//	index.POST("/vote", logic.DoVote)
+	//
+	//	index.POST("/vote/add", logic.AddVote)
+	//	index.POST("/vote/update", logic.UpdateVote)
+	//	index.POST("/vote/del", logic.DelVote)
+	//
+	//	index.GET("/result", logic.ResultInfo)
+	//	index.GET("/result/info", logic.ResultVote)
+	//}
 
-	{
-		index := r.Group("")
-		index.Use(checkUser)
-		//vote相关
-		index.GET("/index", logic.Index)
-
+	// 改造为resultful接口
+	{ //读
 		index.GET("/votes", logic.GetVotes)
 		index.GET("/vote", logic.GetVoteInfo)
-		index.POST("/vote", logic.DoVote)
 
-		index.POST("/vote/add", logic.AddVote)
-		index.POST("/vote/update", logic.UpdateVote)
-		index.POST("/vote/del", logic.DelVote)
+		index.POST("/vote", logic.AddVote)
+		index.PUT("/vote", logic.UpdateVote)
+		index.DELETE("/vote", logic.DelVote)
 
-		index.GET("/result", logic.ResultInfo)
-		index.GET("/result/info", logic.ResultVote)
+		index.GET("/vote/result", logic.ResultVote)
+
+		index.POST("/do_vote", logic.DoVote)
+
 	}
 	r.GET("/", logic.Index)
 
 	{
-		//登录
 		r.GET("/login", logic.GetLogin)
-		r.POST("/login", logic.PostLogin)
+		//登录
+		r.POST("/login", logic.DoLogin)
 		r.GET("/logout", logic.Logout)
 
 		//注册
@@ -45,20 +62,7 @@ func New() {
 	}
 	//验证码
 	{
-		r.GET("/captcha", func(context *gin.Context) {
-			captcha, err := tools.CaptchaGenerate()
-			if err != nil {
-				context.JSON(http.StatusOK, tools.ECode{
-					Code:    10005,
-					Message: err.Error(),
-				})
-				return
-			}
-
-			context.JSON(http.StatusOK, tools.ECode{
-				Data: captcha,
-			})
-		})
+		r.GET("/captcha", logic.GetCaptcha)
 
 		r.POST("/captcha/verify", func(context *gin.Context) {
 			var param tools.CaptchaData
@@ -97,7 +101,7 @@ func checkUser(context *gin.Context) {
 	}
 
 	if name == "" || id < 0 {
-		context.JSON(http.StatusOK, tools.NotLogin)
+		context.JSON(http.StatusUnauthorized, tools.NotLogin)
 		context.Abort()
 	}
 	context.Next()

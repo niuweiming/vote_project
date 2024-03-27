@@ -20,11 +20,11 @@ type driverString struct {
 }
 
 var digitDriver = base64Captcha.DriverDigit{
-	Height:   50,
-	Width:    150,
-	Length:   5,
-	MaxSkew:  1,
-	DotCount: 1,
+	Height:   50,  //生成图片高度
+	Width:    150, //生成图片宽度
+	Length:   5,   //验证码长度
+	MaxSkew:  1,   //文字的倾斜度 越大倾斜越狠，越不容易看懂
+	DotCount: 1,   //背景的点数，越大，字体越模糊
 }
 
 // 使用内存驱动

@@ -1,0 +1,250 @@
+definitions:
+  tools.ECode:
+    properties:
+      code:
+        type: integer
+      data: {}
+      message:
+        type: string
+    type: object
+info:
+  contact:
+    email: 2695062156@qq.com
+  description: This is a sample server vote server.
+  license:
+    name: Apache 2.0
+  title: vote
+  version: "1.0"
+paths:
+  /:
+    get:
+      description: 显示投票页面
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/tools.ECode'
+      summary: 显示投票页面
+      tags:
+      - vote
+  /captcha:
+    get:
+      description: 获取验证码
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/tools.ECode'
+      summary: 获取验证码
+      tags:
+      - login
+  /delVote:
+    delete:
+      description: 根据投票ID删除投票主题和选项
+      parameters:
+      - description: 投票ID
+        in: query
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/tools.ECode'
+        "404":
+          description: 未找到对应投票
+          schema:
+            type: string
+      summary: 删除投票
+      tags:
+      - vote
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: 执行用户登录操作
+      parameters:
+      - description: 用户名
+        in: body
+        name: name
+        required: true
+        schema:
+          type: string
+      - description: 密码
+        in: body
+        name: password
+        required: true
+        schema:
+          type: string
+      - description: 验证码ID
+        in: body
+        name: captcha_id
+        required: true
+        schema:
+          type: string
+      - description: 验证码值
+        in: body
+        name: captcha_value
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            $ref: '#/definitions/tools.ECode'
+        "400":
+          description: 请求失败
+          schema:
+            $ref: '#/definitions/tools.ECode'
+        "401":
+          description: 未认证
+          schema:
+            $ref: '#/definitions/tools.ECode'
+      summary: 执行用户登录
+      tags:
+      - login
+  /logout:
+    get:
+      description: 执行用户退出
+      responses:
+        "302":
+          description: Found
+      summary: 执行用户退出
+      tags:
+      - login
+    post:
+      consumes:
+      - application/json
+      description: 创建一个新用户
+      parameters:
+      - description: 用户名
+        in: body
+        name: name
+        required: true
+        schema:
+          type: string
+      - description: 密码
+        in: body
+        name: password
+        required: true
+        schema:
+          type: string
+      - description: 确认密码
+        in: body
+        name: password2
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/tools.ECode'
+      summary: 创建一个新用户
+      tags:
+      - login
+  /resultInfo:
+    get:
+      description: 获取展示投票结果的页面
+      produces:
+      - text/html
+      responses:
+        "200":
+          description: OK
+      summary: 获取投票结果页面
+      tags:
+      - vote
+  /resultVote:
+    get:
+      description: 根据投票ID获取投票结果数据
+      parameters:
+      - description: 投票ID
+        in: query
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/tools.ECode'
+      summary: 获取投票结果
+      tags:
+      - vote
+  /updateVote:
+    post:
+      consumes:
+      - application/json
+      description: 更新已有投票主题和选项
+      parameters:
+      - description: 投票标题
+        in: body
+        name: title
+        required: true
+        schema:
+          type: string
+      - description: 投票选项名称
+        in: body
+        name: optStr
+        required: true
+        schema:
+          items:
+            type: string
+          type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/tools.ECode'
+      summary: 更新投票
+      tags:
+      - vote
+  /vote:
+    get:
+      description: 获取特定投票信息
+      parameters:
+      - description: id
+        in: query
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/tools.ECode'
+      summary: 获取特定投票信息
+      tags:
+      - vote
+  /votes:
+    get:
+      description: 获取所有投票信息
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/tools.ECode'
+      summary: 获取所有投票信息
+      tags:
+      - vote
+swagger: "2.0"
