@@ -87,7 +87,20 @@ func DoVote(context *gin.Context) {
 		})
 		return
 	}
-	UserID := model.UserId(context)
+	//tokenstr, _ := context.Get("token")
+	//tokeStr, _ := tokenstr.(string)
+	//user, _ := model.CheckJwt(tokeStr)
+	//UserID := user.Id
+	token := context.GetHeader("Authorization")
+	user, err := model.CheckJwt(token)
+	if err != nil {
+		context.JSON(http.StatusUnauthorized, tools.NotLogin)
+		context.Abort()
+		return
+	}
+	UserID := user.Id
+
+	//UserID := model.UserId(context)
 	voteID := Votedata.VoteID
 	opt := Votedata.Opt
 	//fmt.Printf("能打印出什么东西%s,%d,%d", userIDstr, UserID, voteID, opt)
@@ -97,14 +110,16 @@ func DoVote(context *gin.Context) {
 	//	前置查询 悲观锁，乐观锁，分布式锁，消息队列
 	//fmt.Printf("%d\n,%d\n,%d\n", UserID, voteID, opt)
 	old := model.GetVoteHistoryV1(context, UserID, voteID)
-	fmt.Println(old)
+	fmt.Println("检查是否投过票失效了??old %", old)
 	if len(old) >= 1 {
 		context.JSON(http.StatusOK, tools.VoteExits)
 		return
 	}
 
-	model.DoVoteV2(UserID, voteID, opt)
-	context.JSON(http.StatusOK, tools.Success)
+	isSuccess := model.DoVoteV2(UserID, voteID, opt, context)
+	if isSuccess {
+		context.JSON(http.StatusOK, tools.Success)
+	}
 }
 
 func CheckXYZ(context *gin.Context) bool {
