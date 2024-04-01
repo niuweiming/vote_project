@@ -2,9 +2,12 @@ package model
 
 import (
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+	"net/http"
 	"sync"
 	"time"
+	"vote/app/tools"
 )
 
 // GetVotes 从数据库中检索所有投票。
@@ -121,11 +124,14 @@ func DoVoteV1(userId, voteId int64, optIDs []int64) bool {
 }
 
 // DoVoteV2 匿名函数最常用的写法 利用了匿名函数实现事务
-func DoVoteV2(userId, voteId int64, optIDs []int64) bool {
+func DoVoteV2(userId, voteId int64, optIDs []int64, context *gin.Context) bool {
 	if err := Conn.Transaction(func(tx *gorm.DB) error {
 		var ret Vote
 		if err := tx.Table("vote").Where("id = ?", voteId).First(&ret).Error; err != nil {
-			fmt.Printf("err:%s", err.Error())
+			fmt.Printf("没有这个投票选项 err:%s", err.Error())
+			context.JSON(http.StatusOK, tools.ECode{
+				Message: "没有这个投票选项",
+			})
 			return err
 		}
 

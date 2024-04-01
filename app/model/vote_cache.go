@@ -23,7 +23,7 @@ func GetVoteCache(c context.Context, id int64) VoteWithOpt {
 	if ret.Vote.Id > 0 {
 		//更新缓存
 		s, _ := json.Marshal(ret)
-		err1 := Rdb.Set(c, key, s, 6000*time.Second).Err()
+		err1 := Rdb.Set(c, key, s, 36000*time.Second).Err()
 		if err1 != nil {
 			fmt.Printf("err1:%s", err1.Error())
 		}
@@ -37,8 +37,9 @@ func GetVoteHistoryV1(c context.Context, userId, voteId int64) []VoteOptUser {
 	ret := make([]VoteOptUser, 0)
 
 	//先查下Redis
-	k := fmt.Sprintf("vote_user_%d-%d", userId, voteId)
+	k := fmt.Sprintf("vote_user_%d_%d", userId, voteId)
 	str, err := Rdb.Get(c, k).Result()
+	fmt.Printf("我看看str是什么%s", str)
 	if err == nil && len(str) > 0 {
 		fmt.Printf("不回溯数据库！\n")
 		_ = json.Unmarshal([]byte(str), &ret)
@@ -47,12 +48,13 @@ func GetVoteHistoryV1(c context.Context, userId, voteId int64) []VoteOptUser {
 
 	fmt.Printf("回溯数据库！\n")
 	//回溯数据库
-	if err := Conn.Table("vote_opt_user").Where("vote_id = ? and user_id = ?", voteId, userId).Find(&ret).Error; err != nil {
+	if err := Conn.Table("vote_opt_user").Where("vote_id = ? and user_id = ?", voteId, userId).First(&ret).Error; err != nil {
 		fmt.Printf("err:%s", err.Error())
 		return ret
 	}
 
 	retStr, _ := json.Marshal(ret)
+	fmt.Printf("我看看str是什么%s", string(retStr))
 	err = Rdb.Set(c, k, retStr, 36000*time.Second).Err()
 	if err != nil {
 		fmt.Printf("err1:%s\n", err.Error())

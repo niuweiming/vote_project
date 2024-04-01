@@ -91,7 +91,15 @@ func UpdateVote(context *gin.Context) {
 		})
 		return
 	}
-	userid := model.UserId(context)
+	token := context.GetHeader("Authorization")
+	user, err := model.CheckJwt(token)
+	if err != nil {
+		context.JSON(http.StatusUnauthorized, tools.NotLogin)
+		context.Abort()
+		return
+	}
+	userid := user.Id
+	//userid := model.UserId(context)
 
 	//构建结构体
 	vote := model.Vote{

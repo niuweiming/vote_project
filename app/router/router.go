@@ -16,7 +16,7 @@ func New() {
 	r := gin.Default()
 	r.LoadHTMLGlob("app/view/*")
 	//相关的路径，放在这里
-	r.Use(tools.Cors())
+	//r.Use(tools.Cors())
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	index := r.Group("")
 	index.Use(checkUser)
@@ -91,14 +91,25 @@ func New() {
 func checkUser(context *gin.Context) {
 	var name string
 	var id int64
-	values := model.GetSession(context)
+	//values := model.GetSession(context)
+	token := context.GetHeader("Authorization")
+	fmt.Printf("token是什么?? 有没有:%s\n", token)
+	user, err := model.CheckJwt(token)
+	fmt.Printf("user看看打印出来了没有:%s\n", user)
+	if err != nil {
+		context.JSON(http.StatusUnauthorized, tools.NotLogin)
+		context.Abort()
+		return
+	}
 
-	if v, ok := values["name"]; ok {
-		name = v.(string)
-	}
-	if v, ok := values["id"]; ok {
-		id = v.(int64)
-	}
+	name = user.Name
+	id = user.Id
+	//if v, ok := values["name"]; ok {
+	//	name = v.(string)
+	//}
+	//if v, ok := values["id"]; ok {
+	//	id = v.(int64)
+	//}
 
 	if name == "" || id < 0 {
 		context.JSON(http.StatusUnauthorized, tools.NotLogin)
