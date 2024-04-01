@@ -7,7 +7,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"regexp"
-	"strconv"
 	"time"
 	"vote/app/model"
 	"vote/app/tools"
@@ -63,21 +62,27 @@ func DoLogin(context *gin.Context) {
 	//	context.JSON(http.StatusOK, tools.CacheErr)
 	//	return
 	//}
-
 	ret := model.GetUserV1(user.Name)
 
 	if ret.Id < 1 || ret.Password != encrypt(user.Password) {
 		context.JSON(http.StatusOK, tools.UserErr)
 		return
 	}
-	context.SetCookie("name", user.Name, 3600, "/", "", true, false)
-	context.SetCookie("Id", fmt.Sprintf(strconv.FormatInt(ret.Id, 10)), 3600, "/", "", true, false)
+	token, _ := model.GetJwt(ret.Id, user.Name)
+	//context.SetCookie("name", user.Name, 3600, "/", "", true, false)
+	//context.SetCookie("Id", fmt.Sprintf(strconv.FormatInt(ret.Id, 10)), 3600, "/", "", true, false)
+	////
 	//
-
-	_ = model.SetSession(context, user.Name, ret.Id)
-
+	//sessionInfo := model.GetSession(context)
+	//responseData := map[string]interface{}{
+	//	"name": sessionInfo["name"],
+	//	"id":   sessionInfo["id"],
+	//}
+	//fmt.Printf("Session Info: %+v\n", responseData)
+	context.Set("token", token)
 	context.JSON(http.StatusOK, tools.ECode{
 		Message: "登陆成功",
+		Data:    token,
 	})
 	return
 }
@@ -91,7 +96,8 @@ func DoLogin(context *gin.Context) {
 func Logout(context *gin.Context) {
 	//context.SetCookie("name", "", 3600, "/", "", true, false)
 	//context.SetCookie("ID", "", 3600, "/", "", true, false)
-	_ = model.FlushSession(context)
+	//_ = model.FlushSession(context)
+	model.BlacklistToken(context)
 	context.Redirect(http.StatusFound, "/login")
 }
 

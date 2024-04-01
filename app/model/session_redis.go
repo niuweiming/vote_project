@@ -27,8 +27,8 @@ func FlushSession(c *gin.Context) error {
 	fmt.Printf("session : %+v\n", session.Values)
 	session.Values["name"] = ""
 	session.Values["id"] = int64(0)
-	//Userid := session.Values["id"]
-	//fmt.Printf("session : %+v\n",Userid)
+	Userid := session.Values["id"]
+	fmt.Printf("session : %+v\n", Userid)
 	return session.Save(c.Request, c.Writer)
 }
 
