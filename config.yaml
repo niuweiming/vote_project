@@ -1,0 +1,22 @@
+
+# 数据库配置
+db:
+  dialects: mysql
+  host: 47.236.102.175
+  port: 3307
+  db: vote
+  username: root
+  password: 123456
+  charset: utf8
+  #最大空闲数
+  maxIdle: 50
+  #最大连接数
+  maxOpen: 150
+
+# redis配置
+redis:
+  address: 47.236.102.175:6379
+  password: 123456
+
+
+

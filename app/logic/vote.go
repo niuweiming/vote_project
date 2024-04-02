@@ -165,15 +165,19 @@ func DelVote(context *gin.Context) {
 }
 
 type ResultData struct {
-	Title string
-	Count int64
-	Opt   []*ResultVoteOpt
+	Title     string   `json:"title,omitempty"`
+	Count     int64    `json:"count,omitempty"`
+	Opt_name  []string `json:"opt_Name,omitempty"`
+	Opt_count []int64  `json:"opt_Count,omitempty"`
 }
 
-type ResultVoteOpt struct {
-	Name  string
-	Count int64
-}
+//type ResultVoteOpt_name struct {
+//	Name string
+//	//Count int64
+//}
+//type ResultVoteOpt_count struct {
+//	Count int64
+//}
 
 // ResultVote godoc
 // @Summary 获取投票结果
@@ -191,14 +195,23 @@ func ResultVote(context *gin.Context) {
 	data := ResultData{
 		Title: ret.Vote.Title,
 	}
+
 	for _, v := range ret.Opt {
+		//fmt.Printf("%s\n", v.Name)
+		//fmt.Printf("%d\n", v.Count)
 		data.Count = data.Count + v.Count
-		tmp := ResultVoteOpt{
-			Name:  v.Name,
-			Count: v.Count,
-		}
-		data.Opt = append(data.Opt, &tmp)
+		data.Opt_name = append(data.Opt_name, v.Name)
+		data.Opt_count = append(data.Opt_count, v.Count)
+		//tmp_name := ResultVoteOpt_name{
+		//	Name: v.Name,
+		//}
+		//tmp_count := ResultVoteOpt_count{
+		//	Count: v.Count,
+		//}
+		//data.Opt_name = append(data.Opt_name, &tmp_name)
+		//data.Opt_count = append(data.Opt_count, &tmp_count)
 	}
+
 	context.JSON(http.StatusOK, tools.ECode{
 		Data: data,
 	})

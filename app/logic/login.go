@@ -62,13 +62,19 @@ func DoLogin(context *gin.Context) {
 	//	context.JSON(http.StatusOK, tools.CacheErr)
 	//	return
 	//}
+	//fmt.Println("username取不到吗", user.Name)
 	ret := model.GetUserV1(user.Name)
-
+	//fmt.Println(ret)
+	//fmt.Println("ret.Password", ret.Password)
+	fmt.Println("ret.Password", ret.Password)
+	fmt.Println("encrypt(user.Password)", encrypt(user.Password))
 	if ret.Id < 1 || ret.Password != encrypt(user.Password) {
+		fmt.Println("判断为密码不一致")
 		context.JSON(http.StatusOK, tools.UserErr)
 		return
 	}
 	token, _ := model.GetJwt(ret.Id, user.Name)
+	fmt.Println(token)
 	//context.SetCookie("name", user.Name, 3600, "/", "", true, false)
 	//context.SetCookie("Id", fmt.Sprintf(strconv.FormatInt(ret.Id, 10)), 3600, "/", "", true, false)
 	////

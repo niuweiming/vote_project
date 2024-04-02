@@ -7,6 +7,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"vote/config"
 )
 
 //数据库操作
@@ -18,7 +19,15 @@ var Rdb *redis.Client
 
 // 连接mysql数据库
 func NewMysql() {
-	my := fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8&parseTime=True", "root", "123456", "47.236.102.175:3307", "vote")
+	//my := fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8&parseTime=True", "root", "123456", "47.236.102.175:3307", "vote")
+	my := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&parseTime=True&loc=Local",
+		config.Config.Db.Username,
+		config.Config.Db.Password,
+		config.Config.Db.Host,
+		config.Config.Db.Port,
+		config.Config.Db.Db,
+		config.Config.Db.Charset)
+	fmt.Println("我看看有没有取到", config.Config.Db.Username)
 	conn, err := gorm.Open(mysql.Open(my), &gorm.Config{})
 	if err != nil {
 		fmt.Printf("err:%s\n", err)
@@ -29,11 +38,17 @@ func NewMysql() {
 
 // 连接redis
 func NewRdb() {
+	//rdb := redis.NewClient(&redis.Options{
+	//	Addr:     "47.236.102.175:6379",
+	//	Password: "123456", //no password set
+	//	DB:       0,        //use default DB
+	//})
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     "47.236.102.175:6379",
-		Password: "123456", //no password set
-		DB:       0,        //use default DB
+		Addr:     config.Config.Redis.Address,
+		Password: config.Config.Redis.Password, //no password set
+		DB:       0,                            //use default DB
 	})
+	fmt.Println(config.Config.Redis.Address)
 	Rdb = rdb
 	store, _ = redisstore.NewRedisStore(context.TODO(), Rdb)
 

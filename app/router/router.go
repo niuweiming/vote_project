@@ -16,7 +16,7 @@ func New() {
 	r := gin.Default()
 	r.LoadHTMLGlob("app/view/*")
 	//相关的路径，放在这里
-	//r.Use(tools.Cors())
+	r.Use(tools.Cors())
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	index := r.Group("")
 	index.Use(checkUser)

@@ -40,6 +40,8 @@ func GetVotes(context *gin.Context) {
 	})
 }
 
+var OPT map[string]int64
+
 // GetVoteInfo godoc
 // @Summary 获取特定投票信息
 // @Description 获取特定投票信息
@@ -56,6 +58,13 @@ func GetVoteInfo(context *gin.Context) {
 	if ret.Vote.Id <= 0 {
 		context.JSON(http.StatusNotFound, tools.ECode{})
 		return
+	}
+	OPT = make(map[string]int64)
+
+	for _, opt := range ret.Opt {
+		// 在这里处理每个投票选项 opt
+		fmt.Printf("选项ID：%d，选项名称：%s，投票ID：%d，投票数：%d\n", opt.Id, opt.Name, opt.VoteId, opt.Count)
+		OPT[opt.Name] = opt.Id
 	}
 	context.JSON(http.StatusOK, tools.ECode{
 		Data: ret,
@@ -74,8 +83,8 @@ func GetVoteInfo(context *gin.Context) {
 // @Success 200 {object} tools.ECode
 // @Router /vote/do [post]
 type VoteData struct {
-	VoteID int64   `json:"vote_id"`
-	Opt    []int64 `json:"opt"`
+	VoteID int64    `json:"vote_id"`
+	Opt    []string `json:"opt"`
 }
 
 func DoVote(context *gin.Context) {
@@ -103,20 +112,32 @@ func DoVote(context *gin.Context) {
 	//UserID := model.UserId(context)
 	voteID := Votedata.VoteID
 	opt := Votedata.Opt
+	//fmt.Println(opt)
 	//fmt.Printf("能打印出什么东西%s,%d,%d", userIDstr, UserID, voteID, opt)
 	//voteIdstr, _ := context.GetPostForm("vote_id")
 	//optstr, _ := context.GetPostFormArray("opt[]")
 
 	//	前置查询 悲观锁，乐观锁，分布式锁，消息队列
 	//fmt.Printf("%d\n,%d\n,%d\n", UserID, voteID, opt)
+	//optint := make([]int64, 0)
+	//for i := 0; i < len(opt); i++ {
+	//	optint = append(optint, int64(i+1))
+	//}
 	old := model.GetVoteHistoryV1(context, UserID, voteID)
 	fmt.Println("检查是否投过票失效了??old %", old)
 	if len(old) >= 1 {
 		context.JSON(http.StatusOK, tools.VoteExits)
 		return
 	}
+	fmt.Println("opt\n", opt)
+	fmt.Println("OPT\n", OPT)
+	var optint []int64
+	for _, v := range opt {
+		optint = append(optint, OPT[v])
+	}
+	fmt.Println("optint\n", optint)
 
-	isSuccess := model.DoVoteV2(UserID, voteID, opt, context)
+	isSuccess := model.DoVoteV2(UserID, voteID, optint, context)
 	if isSuccess {
 		context.JSON(http.StatusOK, tools.Success)
 	}
@@ -157,12 +178,12 @@ func CheckXYZ(context *gin.Context) bool {
 // @Success 200 {object} tools.ECode
 // @Router /captcha [get]
 func GetCaptcha(context *gin.Context) {
-	if !CheckXYZ(context) {
-		context.JSON(http.StatusOK, tools.ECode{
-			Code:    10005,
-			Message: "您的手速真是太快了！",
-		})
-	}
+	//if !CheckXYZ(context) {
+	//	context.JSON(http.StatusOK, tools.ECode{
+	//		Code:    10005,
+	//		Message: "您的手速真是太快了！",
+	//	})
+	//}
 	captcha, err := tools.CaptchaGenerate()
 	if err != nil {
 		context.JSON(http.StatusOK, tools.ECode{
